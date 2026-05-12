@@ -1,0 +1,69 @@
+import json
+import math
+import random
+from datetime import datetime, timedelta
+
+def seeded(seed):
+    x = math.sin(seed * 9301 + 49297) * 49297
+    return x - math.floor(x)
+
+def spark(len_val, trend):
+    d = []
+    v = 50 + random.random() * 20
+    for i in range(len_val):
+        change = 1.5 if trend == "up" else -1.5 if trend == "down" else 0
+        v += change + (random.random() - 0.5) * 10
+        v = max(10, min(100, v))
+        d.append(round(v))
+    return d
+
+def generate_data():
+    # Executive KPIs
+    kpis = [
+        {"id": "revenue", "label": "Total Revenue", "value": 847200000, "prefix": "$", "change": 12.4, "trend": "up", "sparkline": [42,48,52,55,58,54,62,68,72,76,80,85], "color": "#10b981", "icon": "DollarSign"},
+        {"id": "sponsor-roi", "label": "Avg Sponsor ROI", "value": 342, "suffix": "%", "change": 8.2, "trend": "up", "sparkline": [50,55,52,58,60,65,62,70,68,74,78,82], "color": "#0ea5e9", "icon": "TrendingUp"},
+        {"id": "fan-base", "label": "Global Fan Base", "value": 87400000, "change": 15.7, "trend": "up", "sparkline": [35,40,42,48,52,56,60,64,68,72,78,84], "color": "#a855f7", "icon": "Users"},
+        {"id": "merch-rev", "label": "Merchandise Rev.", "value": 124800000, "prefix": "$", "change": 6.3, "trend": "up", "sparkline": [45,42,48,52,56,58,55,62,66,70,74,78], "color": "#f59e0b", "icon": "ShoppingBag"},
+        {"id": "engagement", "label": "Engagement Rate", "value": 4.82, "suffix": "%", "change": -0.3, "trend": "down", "sparkline": [78,75,72,74,70,68,65,62,60,58,56,54], "color": "#f43f5e", "icon": "Activity"},
+        {"id": "ai-score", "label": "AI Health Score", "value": 94.7, "suffix": "/100", "change": 2.1, "trend": "up", "sparkline": [60,62,65,68,70,72,75,78,82,86,90,94], "color": "#06b6d4", "icon": "Brain"},
+    ]
+
+    # Sponsors
+    sponsors = [
+        {"id": "s1", "name": "Oracle", "tier": "Title", "industry": "Technology", "contractValue": 75000000, "roi": 412, "impressions": 2800000000, "emv": 156000000, "cpm": 4.2, "riskScore": 12, "visibilityIndex": 94, "status": "active"},
+        {"id": "s2", "name": "Petronas", "tier": "Title", "industry": "Energy", "contractValue": 60000000, "roi": 385, "impressions": 2100000000, "emv": 132000000, "cpm": 3.8, "riskScore": 18, "visibilityIndex": 91, "status": "active"},
+        {"id": "s3", "name": "Shell", "tier": "Major", "industry": "Energy", "contractValue": 45000000, "roi": 298, "impressions": 1600000000, "emv": 98000000, "cpm": 5.1, "riskScore": 22, "visibilityIndex": 86, "status": "active"},
+        {"id": "s4", "name": "AWS", "tier": "Major", "industry": "Technology", "contractValue": 40000000, "roi": 356, "impressions": 1900000000, "emv": 88000000, "cpm": 3.5, "riskScore": 8, "visibilityIndex": 89, "status": "active"},
+        {"id": "s5", "name": "Pirelli", "tier": "Official", "industry": "Automotive", "contractValue": 35000000, "roi": 274, "impressions": 3200000000, "emv": 102000000, "cpm": 2.9, "riskScore": 15, "visibilityIndex": 95, "status": "active"},
+        {"id": "s6", "name": "Crypto.com", "tier": "Major", "industry": "Fintech", "contractValue": 50000000, "roi": 189, "impressions": 980000000, "emv": 64000000, "cpm": 6.8, "riskScore": 45, "visibilityIndex": 72, "status": "at-risk"},
+    ]
+
+    # Fan Social Data
+    team_social = [
+        {"team": "Red Bull", "instagram": 18200000, "tiktok": 12400000, "twitter": 8900000, "youtube": 6700000, "engRate": 5.2, "sentiment": 78, "growth": 14.2},
+        {"team": "Ferrari", "instagram": 22100000, "tiktok": 9800000, "twitter": 11200000, "youtube": 4800000, "engRate": 6.1, "sentiment": 82, "growth": 11.8},
+        {"team": "Mercedes", "instagram": 19800000, "tiktok": 11600000, "twitter": 9400000, "youtube": 5900000, "engRate": 4.8, "sentiment": 75, "growth": 8.6},
+        {"team": "McLaren", "instagram": 14600000, "tiktok": 15200000, "twitter": 7800000, "youtube": 5200000, "engRate": 7.4, "sentiment": 88, "growth": 22.1},
+    ]
+
+    # Merch Products
+    merch = [
+        {"id": "m1", "name": "Team Cap 2026", "team": "Red Bull", "category": "Headwear", "revenue": 12400000, "units": 890000, "avgPrice": 13.93, "growth": 18.2, "region": "Europe"},
+        {"id": "m2", "name": "Replica Jersey", "team": "Ferrari", "category": "Apparel", "revenue": 28600000, "units": 420000, "avgPrice": 68.10, "growth": 24.5, "region": "Global"},
+        {"id": "m3", "name": "Team Hoodie", "team": "McLaren", "category": "Apparel", "revenue": 15200000, "units": 380000, "avgPrice": 40.00, "growth": 32.1, "region": "Americas"},
+        {"id": "m4", "name": "Scale Model 1:18", "team": "Mercedes", "category": "Collectibles", "revenue": 8900000, "units": 120000, "avgPrice": 74.17, "growth": 12.8, "region": "Asia"},
+    ]
+    
+    # Save to JSON
+    with open("data.json", "w") as f:
+        json.dump({
+            "kpis": kpis,
+            "sponsors": sponsors,
+            "team_social": team_social,
+            "merch": merch
+        }, f, indent=2)
+        
+    print("Synthetic data generated successfully.")
+
+if __name__ == "__main__":
+    generate_data()
