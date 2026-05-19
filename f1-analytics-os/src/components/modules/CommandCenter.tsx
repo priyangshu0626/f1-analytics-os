@@ -89,7 +89,7 @@ export default function CommandCenter() {
 
   const profiles = selectedTeam === "All Teams"
     ? commercial.profiles
-    : commercial.profiles.filter((p) => p.constructorName === selectedTeam);
+    : commercial.profiles.filter((p) => p.constructorName.toLowerCase().includes(selectedTeam.toLowerCase()) || selectedTeam.toLowerCase().includes(p.constructorName.toLowerCase()));
 
   // Top 4 constructors for points progression chart colors
   const chartColors = ["#0ea5e9", "#ef4444", "#f59e0b", "#10b981", "#a855f7", "#ec4899", "#06b6d4", "#84cc16", "#f97316", "#6366f1", "#14b8a6"];

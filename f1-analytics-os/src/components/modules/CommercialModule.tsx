@@ -33,7 +33,7 @@ export default function CommercialModule() {
 
   const profiles = selectedTeam === "All Teams"
     ? commercial.profiles
-    : commercial.profiles.filter((p) => p.constructorName === selectedTeam);
+    : commercial.profiles.filter((p) => p.constructorName.toLowerCase().includes(selectedTeam.toLowerCase()) || selectedTeam.toLowerCase().includes(p.constructorName.toLowerCase()));
 
   const sorted = [...profiles].sort((a, b) => b.commercialScore - a.commercialScore);
   const topProfile = sorted[0];

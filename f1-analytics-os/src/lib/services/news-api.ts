@@ -43,7 +43,8 @@ async function fetchFromGNews(max: number): Promise<NewsArticle[]> {
   if (!GNEWS_API_KEY) return [];
 
   try {
-    const url = `https://gnews.io/api/v4/search?q=Formula+1+OR+F1&lang=en&max=${max}&sortby=publishedAt&apikey=${GNEWS_API_KEY}`;
+    const query = encodeURIComponent('"Formula 1" OR "F1"');
+    const url = `https://gnews.io/api/v4/search?q=${query}&lang=en&max=${max}&sortby=publishedAt&apikey=${GNEWS_API_KEY}`;
     const res = await fetch(url, { next: { revalidate: 86400 } });
 
     if (!res.ok) {
@@ -71,7 +72,7 @@ async function fetchFromNewsData(max: number): Promise<NewsArticle[]> {
   if (!NEWSDATA_API_KEY) return [];
 
   try {
-    const url = `https://newsdata.io/api/1/news?apikey=${NEWSDATA_API_KEY}&q=formula+1+OR+F1&language=en&size=${Math.min(max, 10)}`;
+    const url = `https://newsdata.io/api/1/news?apikey=${NEWSDATA_API_KEY}&category=sports&q=f1&language=en&size=${Math.min(max, 10)}`;
     const res = await fetch(url, { next: { revalidate: 86400 } });
 
     if (!res.ok) {
