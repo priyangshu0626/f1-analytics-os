@@ -12,6 +12,8 @@ interface AppState {
   setActiveModule: (module: string) => void;
   setNotificationsOpen: (open: boolean) => void;
   setTheme: (theme: 'dark' | 'light') => void;
+  selectedTeam: string;
+  setSelectedTeam: (team: string) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -26,6 +28,8 @@ export const useAppStore = create<AppState>((set) => ({
   setActiveModule: (module) => set({ activeModule: module }),
   setNotificationsOpen: (open) => set({ notificationsOpen: open }),
   setTheme: (theme) => set({ theme }),
+  selectedTeam: 'All Teams',
+  setSelectedTeam: (team) => set({ selectedTeam: team }),
 }));
 
 interface CopilotState {

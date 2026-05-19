@@ -2,6 +2,21 @@
 // F1 ANALYTICS OS — SYNTHETIC ENTERPRISE DATA
 // ============================================
 
+export const TEAMS = [
+  "All Teams",
+  "Red Bull",
+  "Ferrari",
+  "Mercedes",
+  "McLaren",
+  "Aston Martin",
+  "Alpine",
+  "Williams",
+  "RB",
+  "Kick Sauber",
+  "Haas",
+];
+
+
 export interface KPIMetric {
   id: string;
   label: string;
@@ -29,6 +44,7 @@ export interface Sponsor {
   visibilityIndex: number;
   status: "active" | "expiring" | "at-risk";
   logo?: string;
+  team: string;
 }
 
 export interface SocialMetric {
@@ -91,16 +107,16 @@ export const kpiMetrics: KPIMetric[] = [
 // ============================================
 
 export const sponsors: Sponsor[] = [
-  { id: "s1", name: "Oracle", tier: "Title", industry: "Technology", contractValue: 75_000_000, roi: 412, impressions: 2_800_000_000, emv: 156_000_000, cpm: 4.2, riskScore: 12, visibilityIndex: 94, status: "active" },
-  { id: "s2", name: "Petronas", tier: "Title", industry: "Energy", contractValue: 60_000_000, roi: 385, impressions: 2_100_000_000, emv: 132_000_000, cpm: 3.8, riskScore: 18, visibilityIndex: 91, status: "active" },
-  { id: "s3", name: "Shell", tier: "Major", industry: "Energy", contractValue: 45_000_000, roi: 298, impressions: 1_600_000_000, emv: 98_000_000, cpm: 5.1, riskScore: 22, visibilityIndex: 86, status: "active" },
-  { id: "s4", name: "AWS", tier: "Major", industry: "Technology", contractValue: 40_000_000, roi: 356, impressions: 1_900_000_000, emv: 88_000_000, cpm: 3.5, riskScore: 8, visibilityIndex: 89, status: "active" },
-  { id: "s5", name: "Pirelli", tier: "Official", industry: "Automotive", contractValue: 35_000_000, roi: 274, impressions: 3_200_000_000, emv: 102_000_000, cpm: 2.9, riskScore: 15, visibilityIndex: 95, status: "active" },
-  { id: "s6", name: "Crypto.com", tier: "Major", industry: "Fintech", contractValue: 50_000_000, roi: 189, impressions: 980_000_000, emv: 64_000_000, cpm: 6.8, riskScore: 45, visibilityIndex: 72, status: "at-risk" },
-  { id: "s7", name: "Salesforce", tier: "Official", industry: "Technology", contractValue: 30_000_000, roi: 312, impressions: 1_200_000_000, emv: 78_000_000, cpm: 4.0, riskScore: 10, visibilityIndex: 84, status: "active" },
-  { id: "s8", name: "Hilton", tier: "Official", industry: "Hospitality", contractValue: 25_000_000, roi: 245, impressions: 890_000_000, emv: 52_000_000, cpm: 4.8, riskScore: 20, visibilityIndex: 78, status: "expiring" },
-  { id: "s9", name: "Tommy Hilfiger", tier: "Regional", industry: "Fashion", contractValue: 18_000_000, roi: 198, impressions: 540_000_000, emv: 36_000_000, cpm: 5.5, riskScore: 28, visibilityIndex: 68, status: "active" },
-  { id: "s10", name: "Snap", tier: "Regional", industry: "Social Media", contractValue: 12_000_000, roi: 167, impressions: 420_000_000, emv: 24_000_000, cpm: 7.2, riskScore: 52, visibilityIndex: 58, status: "at-risk" },
+  { id: "s1", name: "Oracle", tier: "Title", industry: "Technology", contractValue: 75_000_000, roi: 412, impressions: 2_800_000_000, emv: 156_000_000, cpm: 4.2, riskScore: 12, visibilityIndex: 94, status: "active", team: "Red Bull" },
+  { id: "s2", name: "Petronas", tier: "Title", industry: "Energy", contractValue: 60_000_000, roi: 385, impressions: 2_100_000_000, emv: 132_000_000, cpm: 3.8, riskScore: 18, visibilityIndex: 91, status: "active", team: "Mercedes" },
+  { id: "s3", name: "Shell", tier: "Major", industry: "Energy", contractValue: 45_000_000, roi: 298, impressions: 1_600_000_000, emv: 98_000_000, cpm: 5.1, riskScore: 22, visibilityIndex: 86, status: "active", team: "Ferrari" },
+  { id: "s4", name: "AWS", tier: "Major", industry: "Technology", contractValue: 40_000_000, roi: 356, impressions: 1_900_000_000, emv: 88_000_000, cpm: 3.5, riskScore: 8, visibilityIndex: 89, status: "active", team: "Ferrari" },
+  { id: "s5", name: "Pirelli", tier: "Official", industry: "Automotive", contractValue: 35_000_000, roi: 274, impressions: 3_200_000_000, emv: 102_000_000, cpm: 2.9, riskScore: 15, visibilityIndex: 95, status: "active", team: "All Teams" },
+  { id: "s6", name: "Crypto.com", tier: "Major", industry: "Fintech", contractValue: 50_000_000, roi: 189, impressions: 980_000_000, emv: 64_000_000, cpm: 6.8, riskScore: 45, visibilityIndex: 72, status: "at-risk", team: "Aston Martin" },
+  { id: "s7", name: "Salesforce", tier: "Official", industry: "Technology", contractValue: 30_000_000, roi: 312, impressions: 1_200_000_000, emv: 78_000_000, cpm: 4.0, riskScore: 10, visibilityIndex: 84, status: "active", team: "Red Bull" },
+  { id: "s8", name: "Hilton", tier: "Official", industry: "Hospitality", contractValue: 25_000_000, roi: 245, impressions: 890_000_000, emv: 52_000_000, cpm: 4.8, riskScore: 20, visibilityIndex: 78, status: "expiring", team: "McLaren" },
+  { id: "s9", name: "Tommy Hilfiger", tier: "Regional", industry: "Fashion", contractValue: 18_000_000, roi: 198, impressions: 540_000_000, emv: 36_000_000, cpm: 5.5, riskScore: 28, visibilityIndex: 68, status: "active", team: "Mercedes" },
+  { id: "s10", name: "Snap", tier: "Regional", industry: "Social Media", contractValue: 12_000_000, roi: 167, impressions: 420_000_000, emv: 24_000_000, cpm: 7.2, riskScore: 52, visibilityIndex: 58, status: "at-risk", team: "Alpine" },
 ];
 
 // ============================================

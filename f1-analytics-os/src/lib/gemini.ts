@@ -1,5 +1,5 @@
 const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
-const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent";
 
 const SYSTEM_PROMPT = `You are the AI Strategy Copilot for the F1 Analytics Operating System — an enterprise business intelligence platform used by Formula 1 commercial strategy departments.
 
@@ -59,7 +59,7 @@ export async function* streamGemini(prompt: string): AsyncGenerator<string> {
   }
 
   try {
-    const streamUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`;
+    const streamUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`;
     const response = await fetch(streamUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

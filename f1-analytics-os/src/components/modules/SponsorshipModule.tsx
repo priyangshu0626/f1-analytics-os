@@ -2,6 +2,8 @@
 import { motion } from "framer-motion";
 import { sponsors as fallbackSponsors, exposureHeatmap } from "@/lib/data";
 import { useApiData } from "@/lib/api";
+import { useAppStore } from "@/lib/store";
+import { useState } from "react";
 import { formatCurrency, formatNumber, cn, downloadCSV } from "@/lib/utils";
 import {
   Target, TrendingUp, ArrowUpRight, ArrowDownRight,
@@ -35,7 +37,15 @@ const forecastData = Array.from({ length: 12 }, (_, i) => ({
 }));
 
 export default function SponsorshipModule() {
-  const sponsors = useApiData("/sponsors", fallbackSponsors);
+  const { selectedTeam } = useAppStore();
+  const rawSponsors = useApiData("/sponsors", fallbackSponsors);
+  const [tierFilter, setTierFilter] = useState("All");
+
+  const sponsors = rawSponsors.filter(s => {
+    const matchesTeam = selectedTeam === "All Teams" || s.team === selectedTeam || s.team === "All Teams";
+    const matchesTier = tierFilter === "All" || s.tier === tierFilter;
+    return matchesTeam && matchesTier;
+  });
 
   const totalValue = sponsors.reduce((a, s) => a + s.contractValue, 0);
   const avgROI = Math.round(sponsors.reduce((a, s) => a + s.roi, 0) / (sponsors.length || 1));
@@ -74,8 +84,11 @@ export default function SponsorshipModule() {
           <h3 className="text-sm font-semibold text-white">Sponsor Portfolio</h3>
           <div className="flex gap-2">
             {["All", "Title", "Major", "Official"].map(t => (
-              <button key={t} className={cn("text-[11px] px-3 py-1 rounded-lg transition-colors",
-                t === "All" ? "bg-[#0ea5e9]/10 text-[#0ea5e9]" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]"
+              <button 
+                key={t} 
+                onClick={() => setTierFilter(t)}
+                className={cn("text-[11px] px-3 py-1 rounded-lg transition-colors",
+                t === tierFilter ? "bg-[#0ea5e9]/10 text-[#0ea5e9]" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]"
               )}>{t}</button>
             ))}
             <div className="w-[1px] h-6 bg-white/[0.08] mx-1" />

@@ -2,6 +2,7 @@
 import { motion } from "framer-motion";
 import { teamSocialData as fallbackFans, sentimentTimeline, fanGeography } from "@/lib/data";
 import { useApiData } from "@/lib/api";
+import { useAppStore } from "@/lib/store";
 import { formatNumber, cn } from "@/lib/utils";
 import { Users, TrendingUp, Heart, Globe, Zap, ArrowUpRight } from "lucide-react";
 import {
@@ -43,6 +44,7 @@ const demographics = [
 ];
 
 export default function FanModule() {
+  const { selectedTeam } = useAppStore();
   const teamSocialData = useApiData("/fans", fallbackFans);
   const totalFollowers = platformData.reduce((a, p) => a + p.followers, 0);
 
@@ -174,12 +176,13 @@ export default function FanModule() {
         <div className="space-y-2">
           {teamSocialData.sort((a, b) => b.growth - a.growth).map((team, idx) => {
             const total = team.instagram + team.tiktok + team.twitter + team.youtube;
+            const isSelected = selectedTeam === team.team;
             return (
-              <div key={team.team} className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.08] transition-all">
-                <span className="font-data text-xs text-zinc-500 w-6">#{idx + 1}</span>
+              <div key={team.team} className={cn("flex items-center gap-4 p-3 rounded-xl transition-all border", isSelected ? "bg-[#0ea5e9]/10 border-[#0ea5e9]/30 shadow-[0_0_15px_rgba(14,165,233,0.1)]" : "bg-white/[0.02] border-white/[0.04] hover:border-white/[0.08]")}>
+                <span className={cn("font-data text-xs w-6", isSelected ? "text-[#0ea5e9]" : "text-zinc-500")}>#{idx + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white">{team.team}</p>
-                  <p className="text-[10px] text-zinc-500">{formatNumber(total)} total followers</p>
+                  <p className={cn("text-sm font-semibold", isSelected ? "text-white" : "text-white")}>{team.team}</p>
+                  <p className={cn("text-[10px]", isSelected ? "text-[#0ea5e9]/80" : "text-zinc-500")}>{formatNumber(total)} total followers</p>
                 </div>
                 <div className="text-center px-4">
                   <p className="font-data text-sm text-white">{team.engRate}%</p>

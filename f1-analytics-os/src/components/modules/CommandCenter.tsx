@@ -2,6 +2,7 @@
 import { motion } from "framer-motion";
 import { kpiMetrics as fallbackKpis, revenueTimeline, aiInsights, raceEvents, teamSocialData as fallbackFans } from "@/lib/data";
 import { useApiData } from "@/lib/api";
+import { useAppStore } from "@/lib/store";
 import { formatNumber, formatCurrency, cn } from "@/lib/utils";
 import {
   DollarSign, TrendingUp, Users, ShoppingBag, Activity, Brain,
@@ -60,8 +61,21 @@ const insightColors: Record<string, string> = {
 };
 
 export default function CommandCenter() {
-  const kpiMetrics = useApiData("/kpis", fallbackKpis);
-  const teamSocialData = useApiData("/fans", fallbackFans);
+  const { selectedTeam } = useAppStore();
+  const rawKpiMetrics = useApiData("/kpis", fallbackKpis);
+  const rawTeamSocialData = useApiData("/fans", fallbackFans);
+
+  // Filter or scale based on team
+  const kpiMultiplier = selectedTeam === "All Teams" ? 1 : ((selectedTeam.length % 5) + 2) / 10;
+  const kpiMetrics = rawKpiMetrics.map((k) => ({
+    ...k,
+    value: k.value * kpiMultiplier,
+    change: selectedTeam === "All Teams" ? k.change : k.change * (selectedTeam.length % 2 === 0 ? 1 : -1),
+  }));
+
+  const teamSocialData = selectedTeam === "All Teams"
+    ? rawTeamSocialData.slice(0, 6)
+    : rawTeamSocialData.filter((t) => t.team === selectedTeam);
 
   return (
     <motion.div
@@ -240,7 +254,7 @@ export default function CommandCenter() {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={teamSocialData.slice(0, 6)} layout="vertical" barGap={2}>
+            <BarChart data={teamSocialData} layout="vertical" barGap={2}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />
               <XAxis type="number" tick={{ fill: "#71717a", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1_000_000).toFixed(0)}M`} />
               <YAxis dataKey="team" type="category" tick={{ fill: "#a1a1aa", fontSize: 11 }} axisLine={false} tickLine={false} width={80} />

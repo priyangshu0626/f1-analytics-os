@@ -1,6 +1,7 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Zap, Play, BarChart3, TrendingUp, Users, ShoppingBag, Target, Sparkles, RefreshCw } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, Cell } from "recharts";
@@ -59,7 +60,14 @@ function runMonteCarlo(team: string, race: string, position: string, incident: s
 const iconMap: Record<string, React.ElementType> = { ShoppingBag, Users, Target, TrendingUp };
 
 export default function SimulatorModule() {
-  const [team, setTeam] = useState("Ferrari");
+  const { selectedTeam } = useAppStore();
+  const [team, setTeam] = useState(selectedTeam === "All Teams" ? "Ferrari" : selectedTeam);
+
+  useEffect(() => {
+    if (selectedTeam !== "All Teams") {
+      setTeam(selectedTeam);
+    }
+  }, [selectedTeam]);
   const [race, setRace] = useState("Monaco GP");
   const [position, setPosition] = useState("P1 Win");
   const [incident, setIncident] = useState("None");

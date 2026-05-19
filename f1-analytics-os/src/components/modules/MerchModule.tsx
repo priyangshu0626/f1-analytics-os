@@ -2,6 +2,7 @@
 import { motion } from "framer-motion";
 import { merchProducts as fallbackMerch } from "@/lib/data";
 import { useApiData } from "@/lib/api";
+import { useAppStore } from "@/lib/store";
 import { formatCurrency, cn, downloadCSV } from "@/lib/utils";
 import { ShoppingBag, TrendingUp, ArrowUpRight, Package, DollarSign, Sparkles, Download } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Treemap } from "recharts";
@@ -38,17 +39,29 @@ const regionData = [
 ];
 
 export default function MerchModule() {
-  const merchProducts = useApiData("/merch", fallbackMerch);
+  const { selectedTeam } = useAppStore();
+  const rawMerch = useApiData("/merch", fallbackMerch);
   const [priceMultiplier, setPriceMultiplier] = useState(1.0);
+  const [categoryFilter, setCategoryFilter] = useState("All");
+
+  const merchProducts = rawMerch.filter(p => {
+    const matchesTeam = selectedTeam === "All Teams" || p.team === selectedTeam;
+    const matchesCat = categoryFilter === "All" || p.category === categoryFilter;
+    return matchesTeam && matchesCat;
+  });
+
+  const totalRevenue = merchProducts.reduce((a, p) => a + p.revenue, 0) || 124_800_000;
+  const totalUnits = merchProducts.reduce((a, p) => a + p.units, 0) || 2_680_000;
+  const avgOrderValue = totalUnits ? (totalRevenue / totalUnits) : 46.57;
 
   return (
     <motion.div variants={anim} initial="hidden" animate="show" className="space-y-6">
       {/* KPIs */}
       <motion.div variants={ai} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Total Revenue", value: 124_800_000, prefix: "$", icon: DollarSign, color: "#10b981", change: 6.3 },
-          { label: "Units Sold", value: 2_680_000, icon: Package, color: "#0ea5e9", change: 12.1 },
-          { label: "Avg. Order Value", value: 46.57, prefix: "$", icon: ShoppingBag, color: "#a855f7", change: 3.8 },
+          { label: "Total Revenue", value: totalRevenue, prefix: "$", icon: DollarSign, color: "#10b981", change: 6.3 },
+          { label: "Units Sold", value: totalUnits, icon: Package, color: "#0ea5e9", change: 12.1 },
+          { label: "Avg. Order Value", value: avgOrderValue, prefix: "$", icon: ShoppingBag, color: "#a855f7", change: 3.8 },
           { label: "Growth Rate", value: 18.4, suffix: "%", icon: TrendingUp, color: "#f59e0b", change: 4.2 },
         ].map(kpi => {
           const Icon = kpi.icon;
@@ -129,13 +142,28 @@ export default function MerchModule() {
       <motion.div variants={ai} className="chart-container">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-white">Product Performance Ranking</h3>
-          <button 
-            onClick={() => downloadCSV(merchProducts, 'merch_performance')}
-            className="flex items-center gap-1.5 text-[11px] px-3 py-1 rounded-lg bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08] transition-colors"
-          >
-            <Download className="w-3 h-3" />
-            Export CSV
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-2 mr-2">
+              {["All", "Apparel", "Headwear", "Collectibles", "Accessories"].map(c => (
+                <button
+                  key={c}
+                  onClick={() => setCategoryFilter(c)}
+                  className={cn("text-[11px] px-3 py-1 rounded-lg transition-colors",
+                    c === categoryFilter ? "bg-[#f59e0b]/10 text-[#f59e0b]" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]"
+                  )}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+            <button 
+              onClick={() => downloadCSV(merchProducts, 'merch_performance')}
+              className="flex items-center gap-1.5 text-[11px] px-3 py-1 rounded-lg bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08] transition-colors"
+            >
+              <Download className="w-3 h-3" />
+              Export CSV
+            </button>
+          </div>
         </div>
         <div className="space-y-2">
           {merchProducts.sort((a, b) => b.revenue - a.revenue).map((p, idx) => (

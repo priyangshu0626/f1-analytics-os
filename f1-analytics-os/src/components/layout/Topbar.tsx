@@ -1,7 +1,8 @@
 "use client";
 import { useAppStore } from "@/lib/store";
+import { TEAMS } from "@/lib/data";
 import { motion } from "framer-motion";
-import { Search, Bell, Command, ChevronRight } from "lucide-react";
+import { Search, Bell, Command, ChevronRight, Filter } from "lucide-react";
 
 const moduleLabels: Record<string, string> = {
   "command-center": "Executive Command Center",
@@ -14,7 +15,7 @@ const moduleLabels: Record<string, string> = {
 };
 
 export default function Topbar() {
-  const { activeModule, setCommandPaletteOpen, setNotificationsOpen } = useAppStore();
+  const { activeModule, setCommandPaletteOpen, setNotificationsOpen, selectedTeam, setSelectedTeam } = useAppStore();
 
   return (
     <header className="h-14 border-b border-white/[0.06] bg-[#09090b]/80 backdrop-blur-xl flex items-center justify-between px-6 sticky top-0 z-30">
@@ -23,6 +24,22 @@ export default function Topbar() {
         <span className="text-zinc-500">F1 Analytics OS</span>
         <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
         <span className="text-white font-medium">{moduleLabels[activeModule] || activeModule}</span>
+      </div>
+
+      {/* Center - Team Selector */}
+      <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+        <Filter className="w-3.5 h-3.5 text-zinc-400" />
+        <select
+          value={selectedTeam}
+          onChange={(e) => setSelectedTeam(e.target.value)}
+          className="bg-transparent text-sm text-white font-medium outline-none cursor-pointer"
+        >
+          {TEAMS.map((team) => (
+            <option key={team} value={team} className="bg-[#0c0c0f] text-white">
+              {team}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Right Actions */}
