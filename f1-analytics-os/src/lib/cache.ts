@@ -1,9 +1,11 @@
 // ============================================
-// F1 ANALYTICS OS — EDGE-COMPATIBLE CACHE
+// F1 ANALYTICS OS — HYBRID CACHE LAYER
 // ============================================
-// In-memory cache with TTL. On Vercel, this persists within
-// a single serverless cold start (~5-15 min). The cron job
-// refreshes daily, and stale data is served while revalidating.
+// Two-tier caching: in-memory (fast) + Supabase (persistent).
+// On Vercel cold start, data is recovered from Supabase.
+// On warm request, served instantly from memory.
+
+import { supabaseGet, supabaseSet, isSupabaseConfigured } from "./supabase";
 
 interface CacheEntry<T> {
   data: T;
@@ -12,13 +14,11 @@ interface CacheEntry<T> {
 }
 
 const store = new Map<string, CacheEntry<unknown>>();
-
 const DEFAULT_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 /**
  * Get cached data or fetch fresh data if expired/missing.
- * Implements stale-while-revalidate: returns stale data immediately
- * while triggering a background refresh.
+ * Layer 1: In-memory → Layer 2: Supabase → Layer 3: Live fetch.
  */
 export async function getOrFetch<T>(
   key: string,
@@ -28,39 +28,62 @@ export async function getOrFetch<T>(
   const entry = store.get(key) as CacheEntry<T> | undefined;
   const now = Date.now();
 
-  // Cache hit and still fresh
+  // Layer 1: Memory cache hit and still fresh
   if (entry && now - entry.timestamp < entry.ttl) {
     return entry.data;
   }
 
-  // Cache hit but stale — return stale, refresh in background
+  // Layer 1b: Memory cache stale — return stale, refresh in background
   if (entry) {
-    // Fire and forget background refresh
     fetchFn()
       .then((data) => {
         store.set(key, { data, timestamp: Date.now(), ttl: ttlMs });
+        if (isSupabaseConfigured()) supabaseSet(key, data).catch(() => {});
       })
-      .catch(() => {
-        // Keep stale data on failure
-      });
+      .catch(() => {});
     return entry.data;
   }
 
-  // Cache miss — must fetch
+  // Layer 2: Try Supabase persistent cache
+  if (isSupabaseConfigured()) {
+    try {
+      const persisted = await supabaseGet<T>(key);
+      if (persisted !== null) {
+        store.set(key, { data: persisted, timestamp: now, ttl: ttlMs });
+        // Background refresh from live source
+        fetchFn()
+          .then((data) => {
+            store.set(key, { data, timestamp: Date.now(), ttl: ttlMs });
+            supabaseSet(key, data).catch(() => {});
+          })
+          .catch(() => {});
+        return persisted;
+      }
+    } catch {
+      // Supabase unavailable, continue to live fetch
+    }
+  }
+
+  // Layer 3: Cache miss — live fetch
   try {
     const data = await fetchFn();
     store.set(key, { data, timestamp: now, ttl: ttlMs });
+    if (isSupabaseConfigured()) supabaseSet(key, data).catch(() => {});
     return data;
   } catch (error) {
-    throw error; // Caller handles fallback
+    throw error;
   }
 }
 
 /**
  * Directly set cache data (used by cron job).
+ * Writes to both memory and Supabase.
  */
-export function setCache<T>(key: string, data: T, ttlMs: number = DEFAULT_TTL): void {
+export async function setCache<T>(key: string, data: T, ttlMs: number = DEFAULT_TTL): Promise<void> {
   store.set(key, { data, timestamp: Date.now(), ttl: ttlMs });
+  if (isSupabaseConfigured()) {
+    await supabaseSet(key, data).catch(() => {});
+  }
 }
 
 /**
@@ -72,7 +95,7 @@ export function getCache<T>(key: string): T | undefined {
 }
 
 /**
- * Invalidate all cached entries (forces fresh fetches).
+ * Invalidate all in-memory cached entries.
  */
 export function invalidateAll(): void {
   store.clear();
@@ -81,7 +104,7 @@ export function invalidateAll(): void {
 /**
  * Get cache metadata for debugging.
  */
-export function getCacheStats(): { keys: string[]; entries: number; lastUpdated: string | null } {
+export function getCacheStats(): { keys: string[]; entries: number; lastUpdated: string | null; persistent: boolean } {
   const keys = Array.from(store.keys());
   let oldest = Infinity;
   for (const [, entry] of store) {
@@ -91,5 +114,6 @@ export function getCacheStats(): { keys: string[]; entries: number; lastUpdated:
     keys,
     entries: store.size,
     lastUpdated: store.size > 0 ? new Date(oldest).toISOString() : null,
+    persistent: isSupabaseConfigured(),
   };
 }

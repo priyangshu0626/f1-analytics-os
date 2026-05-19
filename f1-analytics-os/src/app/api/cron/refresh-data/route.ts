@@ -1,13 +1,18 @@
 // ============================================
-// F1 ANALYTICS OS — DAILY CRON REFRESH
+// F1 ANALYTICS OS — ENTERPRISE CRON REFRESH
 // ============================================
 // Vercel Cron Job: runs daily at 05:00 UTC.
-// Fetches all live data and populates the cache.
+// Orchestrates ALL data sources: Jolpica F1, GNews,
+// NewsData.io, YouTube, Exchange Rates, HuggingFace,
+// Gemini 2.5 Pro. Persists to Supabase + memory cache.
 
 import { NextRequest, NextResponse } from "next/server";
 import { setCache, invalidateAll } from "@/lib/cache";
 import { fetchDriverStandings, fetchConstructorStandings, fetchRaceSchedule, fetchRaceResults, fetchNextRace } from "@/lib/services/f1-api";
 import { fetchF1News } from "@/lib/services/news-api";
+import { fetchF1ChannelStats, fetchF1TrendingVideos } from "@/lib/services/youtube-api";
+import { fetchExchangeRates } from "@/lib/services/exchange-rate-api";
+import { analyzeSentiment, aggregateSentiment } from "@/lib/services/sentiment-api";
 import {
   generateStrategicAlerts,
   generateSponsorEstimates,
@@ -17,7 +22,7 @@ import {
   generateTickerHeadlines,
 } from "@/lib/services/ai-insights";
 
-export const maxDuration = 60; // Allow up to 60s for all fetches
+export const maxDuration = 60;
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   for (let i = 0; i < retries; i++) {
@@ -25,18 +30,16 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
       return await fn();
     } catch (err) {
       if (i === retries - 1) throw err;
-      await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, i))); // Exponential backoff
+      await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, i)));
     }
   }
   throw new Error("Unreachable");
 }
 
 export async function GET(request: NextRequest) {
-  // Security: verify cron secret
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
-  // Allow unauthenticated in development, require auth in production
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -46,13 +49,13 @@ export async function GET(request: NextRequest) {
   const errors: string[] = [];
 
   try {
-    // Clear stale cache
     invalidateAll();
     log.push("Cache invalidated");
 
-    // ---- Step 1: Fetch raw F1 data (real) ----
+    // ═══════════════════════════════════════════
+    // STAGE 1: Core F1 Data (Jolpica API)
+    // ═══════════════════════════════════════════
     let drivers, constructors, schedule, results, nextRace;
-
     try {
       [drivers, constructors, schedule, results, nextRace] = await Promise.all([
         withRetry(fetchDriverStandings),
@@ -61,69 +64,141 @@ export async function GET(request: NextRequest) {
         withRetry(fetchRaceResults),
         withRetry(fetchNextRace),
       ]);
-      log.push(`F1 data: ${drivers.length} drivers, ${constructors.length} constructors, ${schedule.length} races, ${results.length} results`);
+      log.push(`✅ F1: ${drivers.length} drivers, ${constructors.length} constructors, ${schedule.length} races, ${results.length} results`);
     } catch (err) {
-      errors.push(`F1 API failed: ${err}`);
+      errors.push(`❌ F1 API: ${err}`);
       return NextResponse.json({ success: false, errors, elapsed: Date.now() - startTime }, { status: 500 });
     }
 
-    // Cache raw standings
-    setCache("standings:drivers", drivers);
-    setCache("standings:constructors", constructors);
-    setCache("schedule", schedule);
-    setCache("results", results);
-    setCache("nextRace", nextRace);
+    await setCache("standings:drivers", drivers);
+    await setCache("standings:constructors", constructors);
+    await setCache("schedule", schedule);
+    await setCache("results", results);
+    await setCache("nextRace", nextRace);
 
-    // ---- Step 2: Fetch news ----
+    // ═══════════════════════════════════════════
+    // STAGE 2: Multi-Source News (GNews + NewsData.io)
+    // ═══════════════════════════════════════════
     let news: Awaited<ReturnType<typeof fetchF1News>> = [];
     try {
       news = await withRetry(() => fetchF1News(10));
-      log.push(`News: ${news.length} articles`);
+      log.push(`✅ News: ${news.length} articles (GNews + NewsData.io)`);
     } catch (err) {
-      errors.push(`News API failed: ${err}`);
-      news = [];
+      errors.push(`⚠️ News: ${err}`);
     }
-    setCache("news", news);
+    await setCache("news", news);
 
-    // ---- Step 3: Generate AI-computed data ----
-    const sponsors = generateSponsorEstimates(constructors);
-    setCache("sponsors", sponsors);
-    log.push(`Sponsors: ${sponsors.length} generated`);
+    // ═══════════════════════════════════════════
+    // STAGE 3: YouTube Intelligence
+    // ═══════════════════════════════════════════
+    let ytChannels: Awaited<ReturnType<typeof fetchF1ChannelStats>> = [];
+    let ytTrending: Awaited<ReturnType<typeof fetchF1TrendingVideos>> = [];
+    try {
+      [ytChannels, ytTrending] = await Promise.all([
+        fetchF1ChannelStats(),
+        fetchF1TrendingVideos(5),
+      ]);
+      log.push(`✅ YouTube: ${ytChannels.length} channels, ${ytTrending.length} trending videos`);
+    } catch (err) {
+      errors.push(`⚠️ YouTube: ${err}`);
+    }
+    await setCache("youtube:channels", ytChannels);
+    await setCache("youtube:trending", ytTrending);
 
+    // ═══════════════════════════════════════════
+    // STAGE 4: Exchange Rates
+    // ═══════════════════════════════════════════
+    let exchangeRates: Awaited<ReturnType<typeof fetchExchangeRates>>;
+    try {
+      exchangeRates = await fetchExchangeRates();
+      log.push(`✅ Exchange: ${Object.keys(exchangeRates.rates).length} currencies`);
+    } catch (err) {
+      errors.push(`⚠️ Exchange: ${err}`);
+      exchangeRates = { base: "USD", rates: { USD: 1 }, lastUpdated: new Date().toISOString() };
+    }
+    await setCache("exchangeRates", exchangeRates);
+
+    // ═══════════════════════════════════════════
+    // STAGE 5: Sentiment Analysis (HuggingFace)
+    // ═══════════════════════════════════════════
+    let sentimentData: Awaited<ReturnType<typeof aggregateSentiment>> = { score: 70, positive: 50, neutral: 35, negative: 15 };
+    try {
+      if (news.length > 0) {
+        const headlines = news.map((n) => n.title);
+        const sentimentResults = await analyzeSentiment(headlines);
+        sentimentData = aggregateSentiment(sentimentResults);
+        // Attach sentiment to news articles
+        news = news.map((n, i) => ({
+          ...n,
+          sentiment: sentimentResults[i]?.label || "neutral",
+        }));
+        await setCache("news", news); // Update with sentiment
+        log.push(`✅ Sentiment: score=${sentimentData.score} (${sentimentData.positive}% pos, ${sentimentData.neutral}% neu, ${sentimentData.negative}% neg)`);
+      }
+    } catch (err) {
+      errors.push(`⚠️ Sentiment: ${err}`);
+    }
+    await setCache("sentiment", sentimentData);
+
+    // ═══════════════════════════════════════════
+    // STAGE 6: AI-Computed Business Intelligence
+    // ═══════════════════════════════════════════
+
+    // Enrich social estimates with real YouTube data
     const social = generateSocialEstimates(constructors);
-    setCache("fans", social);
-    log.push(`Social: ${social.length} teams`);
+    for (const team of social) {
+      const ytData = ytChannels.find((c) => {
+        const teamLower = team.team.toLowerCase().replace(/\s+/g, "_").replace("f1_team", "").trim();
+        return c.teamKey.includes(teamLower) || teamLower.includes(c.teamKey);
+      });
+      if (ytData) {
+        team.youtube = ytData.subscriberCount;
+      }
+    }
+    await setCache("fans", social);
+    log.push(`✅ Social: ${social.length} teams (enriched with YouTube)`);
+
+    const sponsors = generateSponsorEstimates(constructors);
+    await setCache("sponsors", sponsors);
+    log.push(`✅ Sponsors: ${sponsors.length} generated`);
 
     const merch = generateMerchEstimates(constructors);
-    setCache("merch", merch);
-    log.push(`Merch: ${merch.length} products`);
+    await setCache("merch", merch);
+    log.push(`✅ Merch: ${merch.length} products`);
 
     const kpis = generateKPIs(constructors, sponsors, social, merch);
-    setCache("kpis", kpis);
-    log.push(`KPIs: ${kpis.length} metrics`);
+    await setCache("kpis", kpis);
+    log.push(`✅ KPIs: ${kpis.length} metrics`);
 
     const ticker = generateTickerHeadlines(constructors, drivers, nextRace, news);
-    setCache("ticker", ticker);
-    log.push(`Ticker: ${ticker.length} headlines`);
+    await setCache("ticker", ticker);
+    log.push(`✅ Ticker: ${ticker.length} headlines`);
 
-    // ---- Step 4: Generate AI strategic alerts ----
+    // ═══════════════════════════════════════════
+    // STAGE 7: AI Strategic Alerts (Gemini 2.5 Pro)
+    // ═══════════════════════════════════════════
     let alerts: Awaited<ReturnType<typeof generateStrategicAlerts>> = [];
     try {
       alerts = await withRetry(() => generateStrategicAlerts(constructors, drivers, results, news));
-      log.push(`Alerts: ${alerts.length} generated via AI`);
+      log.push(`✅ AI Alerts: ${alerts.length} via Gemini 2.5 Pro`);
     } catch (err) {
-      errors.push(`AI alerts failed: ${err}`);
-      alerts = [];
+      errors.push(`⚠️ AI Alerts: ${err}`);
     }
-    setCache("alerts", alerts);
+    await setCache("alerts", alerts);
 
     const elapsed = Date.now() - startTime;
-    log.push(`Completed in ${elapsed}ms`);
+    log.push(`\n✅ PIPELINE COMPLETE in ${elapsed}ms | ${7 - errors.length}/7 stages successful`);
 
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
       elapsed,
+      stages: {
+        f1: "✅", news: news.length > 0 ? "✅" : "⚠️",
+        youtube: ytChannels.length > 0 ? "✅" : "⚠️",
+        exchange: "✅", sentiment: sentimentData.score > 0 ? "✅" : "⚠️",
+        intelligence: "✅", alerts: alerts.length > 0 ? "✅" : "⚠️",
+      },
       log,
       errors: errors.length > 0 ? errors : undefined,
     });

@@ -1,10 +1,11 @@
 // ============================================
-// F1 ANALYTICS OS — NEWS API CLIENT
+// F1 ANALYTICS OS — MULTI-SOURCE NEWS API
 // ============================================
-// Fetches real F1 news from GNews API (free tier: 100 req/day).
-// Falls back to Gemini-generated summaries if no key provided.
+// Combines GNews + NewsData.io for maximum coverage.
+// Deduplicates and ranks by recency.
 
 const GNEWS_API_KEY = process.env.GNEWS_API_KEY || "";
+const NEWSDATA_API_KEY = process.env.NEWSDATA_API_KEY || "";
 
 export interface NewsArticle {
   title: string;
@@ -13,12 +14,33 @@ export interface NewsArticle {
   url: string;
   publishedAt: string;
   image?: string;
+  sentiment?: "positive" | "neutral" | "negative";
 }
 
 export async function fetchF1News(max: number = 10): Promise<NewsArticle[]> {
-  if (!GNEWS_API_KEY) {
-    return getStaticFallbackNews();
+  const [gnewsArticles, newsdataArticles] = await Promise.all([
+    fetchFromGNews(max),
+    fetchFromNewsData(max),
+  ]);
+
+  // Combine and deduplicate by title similarity
+  const combined = [...gnewsArticles];
+  for (const article of newsdataArticles) {
+    const isDuplicate = combined.some((a) =>
+      a.title.toLowerCase().includes(article.title.toLowerCase().slice(0, 30)) ||
+      article.title.toLowerCase().includes(a.title.toLowerCase().slice(0, 30))
+    );
+    if (!isDuplicate) combined.push(article);
   }
+
+  // Sort by date (newest first)
+  combined.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+
+  return combined.slice(0, max);
+}
+
+async function fetchFromGNews(max: number): Promise<NewsArticle[]> {
+  if (!GNEWS_API_KEY) return [];
 
   try {
     const url = `https://gnews.io/api/v4/search?q=Formula+1+OR+F1&lang=en&max=${max}&sortby=publishedAt&apikey=${GNEWS_API_KEY}`;
@@ -26,7 +48,7 @@ export async function fetchF1News(max: number = 10): Promise<NewsArticle[]> {
 
     if (!res.ok) {
       console.error(`GNews API error: ${res.status}`);
-      return getStaticFallbackNews();
+      return [];
     }
 
     const data = await res.json();
@@ -34,18 +56,48 @@ export async function fetchF1News(max: number = 10): Promise<NewsArticle[]> {
     return (data.articles || []).map((a: any) => ({
       title: a.title || "",
       description: a.description || "",
-      source: a.source?.name || "Unknown",
+      source: a.source?.name || "GNews",
       url: a.url || "",
       publishedAt: a.publishedAt || new Date().toISOString(),
       image: a.image,
     }));
-  } catch (error) {
-    console.error("News fetch error:", error);
-    return getStaticFallbackNews();
+  } catch (err) {
+    console.error("GNews fetch error:", err);
+    return [];
   }
 }
 
-function getStaticFallbackNews(): NewsArticle[] {
+async function fetchFromNewsData(max: number): Promise<NewsArticle[]> {
+  if (!NEWSDATA_API_KEY) return [];
+
+  try {
+    const url = `https://newsdata.io/api/1/news?apikey=${NEWSDATA_API_KEY}&q=formula+1+OR+F1&language=en&size=${Math.min(max, 10)}`;
+    const res = await fetch(url, { next: { revalidate: 86400 } });
+
+    if (!res.ok) {
+      console.error(`NewsData.io API error: ${res.status}`);
+      return [];
+    }
+
+    const data = await res.json();
+    if (data.status !== "success") return [];
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (data.results || []).map((a: any) => ({
+      title: a.title || "",
+      description: a.description || a.content?.slice(0, 200) || "",
+      source: a.source_name || a.source_id || "NewsData",
+      url: a.link || "",
+      publishedAt: a.pubDate || new Date().toISOString(),
+      image: a.image_url,
+    }));
+  } catch (err) {
+    console.error("NewsData.io fetch error:", err);
+    return [];
+  }
+}
+
+export function getStaticFallbackNews(): NewsArticle[] {
   const now = new Date().toISOString();
   return [
     { title: "2026 F1 Season: Mercedes dominates early rounds", description: "Antonelli and Russell lead the championship after four races.", source: "F1 Analytics OS", url: "#", publishedAt: now },
