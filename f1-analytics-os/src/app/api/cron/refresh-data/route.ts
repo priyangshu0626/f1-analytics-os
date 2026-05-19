@@ -4,7 +4,8 @@
 // Vercel Cron Job: runs daily at 05:00 UTC.
 // Orchestrates ALL data sources: Jolpica F1, GNews,
 // NewsData.io, YouTube, Exchange Rates, HuggingFace,
-// Gemini 2.5 Pro. Persists to Supabase + memory cache.
+// Gemini 2.5 Pro, Open Meteo, REST Countries.
+// Persists to Supabase + memory cache.
 
 import { NextRequest, NextResponse } from "next/server";
 import { setCache, invalidateAll } from "@/lib/cache";
@@ -13,6 +14,8 @@ import { fetchF1News } from "@/lib/services/news-api";
 import { fetchF1ChannelStats, fetchF1TrendingVideos } from "@/lib/services/youtube-api";
 import { fetchExchangeRates } from "@/lib/services/exchange-rate-api";
 import { analyzeSentiment, aggregateSentiment } from "@/lib/services/sentiment-api";
+import { fetchAllRaceWeather } from "@/lib/services/weather-api";
+import { fetchF1CountryData } from "@/lib/services/countries-api";
 import {
   generateStrategicAlerts,
   generateSponsorEstimates,
@@ -186,8 +189,30 @@ export async function GET(request: NextRequest) {
     }
     await setCache("alerts", alerts);
 
+    // ═══════════════════════════════════════════
+    // STAGE 8: Race Weather (Open Meteo)
+    // ═══════════════════════════════════════════
+    try {
+      const weather = await fetchAllRaceWeather(schedule);
+      await setCache("weather", weather);
+      log.push(`✅ Weather: ${weather.length} race forecasts`);
+    } catch (err) {
+      errors.push(`⚠️ Weather: ${err}`);
+    }
+
+    // ═══════════════════════════════════════════
+    // STAGE 9: Country Data (REST Countries)
+    // ═══════════════════════════════════════════
+    try {
+      const countries = await fetchF1CountryData();
+      await setCache("countries", countries);
+      log.push(`✅ Countries: ${countries.length} F1 markets`);
+    } catch (err) {
+      errors.push(`⚠️ Countries: ${err}`);
+    }
+
     const elapsed = Date.now() - startTime;
-    log.push(`\n✅ PIPELINE COMPLETE in ${elapsed}ms | ${7 - errors.length}/7 stages successful`);
+    log.push(`\n✅ PIPELINE COMPLETE in ${elapsed}ms | ${9 - errors.length}/9 stages successful`);
 
     return NextResponse.json({
       success: true,
@@ -198,6 +223,7 @@ export async function GET(request: NextRequest) {
         youtube: ytChannels.length > 0 ? "✅" : "⚠️",
         exchange: "✅", sentiment: sentimentData.score > 0 ? "✅" : "⚠️",
         intelligence: "✅", alerts: alerts.length > 0 ? "✅" : "⚠️",
+        weather: "✅", countries: "✅",
       },
       log,
       errors: errors.length > 0 ? errors : undefined,
