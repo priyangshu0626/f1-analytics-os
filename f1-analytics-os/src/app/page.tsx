@@ -9,9 +9,9 @@ import CommandPalette from "@/components/layout/CommandPalette";
 
 // Dynamic imports for code splitting
 const CommandCenter = dynamic(() => import("@/components/modules/CommandCenter"), { loading: () => <ModuleLoader /> });
-const SponsorshipModule = dynamic(() => import("@/components/modules/SponsorshipModule"), { loading: () => <ModuleLoader /> });
+const CommercialModule = dynamic(() => import("@/components/modules/CommercialModule"), { loading: () => <ModuleLoader /> });
 const FanModule = dynamic(() => import("@/components/modules/FanModule"), { loading: () => <ModuleLoader /> });
-const MerchModule = dynamic(() => import("@/components/modules/MerchModule"), { loading: () => <ModuleLoader /> });
+const MarketModule = dynamic(() => import("@/components/modules/MarketModule"), { loading: () => <ModuleLoader /> });
 const SimulatorModule = dynamic(() => import("@/components/modules/SimulatorModule"), { loading: () => <ModuleLoader /> });
 const CopilotModule = dynamic(() => import("@/components/modules/CopilotModule"), { loading: () => <ModuleLoader /> });
 
@@ -40,9 +40,9 @@ function ModuleLoader() {
 
 const modules: Record<string, React.ComponentType> = {
   "command-center": CommandCenter,
-  sponsorship: SponsorshipModule,
+  commercial: CommercialModule,
   fans: FanModule,
-  merchandise: MerchModule,
+  markets: MarketModule,
   simulator: SimulatorModule,
   copilot: CopilotModule,
 };

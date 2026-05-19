@@ -3,16 +3,16 @@ import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard, Target, Users, ShoppingBag, Zap,
+  LayoutDashboard, BarChart3, Users, Globe, Zap,
   MessageSquare, Settings, ChevronLeft, ChevronRight,
-  Activity, Bell
+  Activity
 } from "lucide-react";
 
 const navItems = [
   { id: "command-center", label: "Command Center", icon: LayoutDashboard },
-  { id: "sponsorship", label: "Sponsorship ROI", icon: Target },
+  { id: "commercial", label: "Commercial Intel", icon: BarChart3 },
   { id: "fans", label: "Fan Intelligence", icon: Users },
-  { id: "merchandise", label: "Merchandise", icon: ShoppingBag },
+  { id: "markets", label: "Market Intel", icon: Globe },
   { id: "simulator", label: "Race Simulator", icon: Zap },
   { id: "copilot", label: "AI Copilot", icon: MessageSquare },
 ];
