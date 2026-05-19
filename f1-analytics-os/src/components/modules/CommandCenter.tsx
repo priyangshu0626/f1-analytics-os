@@ -225,7 +225,7 @@ export default function CommandCenter() {
                     {idx + 1}
                   </span>
                   <div>
-                    <p className="text-sm font-medium text-white">{c.name}</p>
+                    <p className="text-sm font-medium text-white">{c.constructorName}</p>
                     <p className="text-[10px] text-zinc-500">{c.wins} wins</p>
                   </div>
                 </div>
