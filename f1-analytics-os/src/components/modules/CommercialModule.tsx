@@ -25,6 +25,20 @@ interface CommercialProfile {
   commercialScore: number; standingsScore: number; youtubeScore: number; newsScore: number;
 }
 
+const REAL_SPONSORS: Record<string, string> = {
+  "Mercedes": "Petronas, INEOS, CrowdStrike",
+  "Ferrari": "HP, Shell, Santander",
+  "Red Bull": "Oracle, Honda, Bybit",
+  "McLaren": "OKX, Google, Dell",
+  "Alpine F1 Team": "BWT, Castrol, Microsoft",
+  "Aston Martin": "Aramco, Cognizant, Honda",
+  "Williams": "Komatsu, Gulf, Duracell",
+  "Haas F1 Team": "MoneyGram, Play'n GO, Chipotle",
+  "Sauber": "Stake, Kick, Audi",
+  "RB": "Visa, Cash App, Hugo Boss",
+  "Alpine": "BWT, Castrol, Microsoft"
+};
+
 export default function CommercialModule() {
   const { selectedTeam } = useAppStore();
   const { data: commercial } = useLiveData<{ profiles: CommercialProfile[]; pointsProgression: Array<Record<string, string | number>> }>(
@@ -93,6 +107,7 @@ export default function CommercialModule() {
                 <th>Constructor</th>
                 <th>Standings</th>
                 <th>Points</th>
+                <th>Top Sponsors</th>
                 <th>YT Subs</th>
                 <th>News</th>
                 <th>Sentiment</th>
@@ -106,6 +121,7 @@ export default function CommercialModule() {
                   <td><span className="text-white font-medium text-sm">{p.constructorName}</span></td>
                   <td className="font-data text-zinc-300">P{p.standingsPosition}</td>
                   <td className="font-data text-white">{p.championshipPoints}</td>
+                  <td className="text-xs text-zinc-400">{REAL_SPONSORS[p.constructorName] || "Various Partners"}</td>
                   <td className="font-data text-zinc-300">{p.youtubeSubscribers > 0 ? formatNumber(p.youtubeSubscribers) : <span className="text-zinc-600">No data</span>}</td>
                   <td className="font-data text-zinc-300">{p.newsMentions}</td>
                   <td>

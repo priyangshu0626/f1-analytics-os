@@ -84,6 +84,7 @@ export default function CommandCenter() {
   // All real data
   const { data: kpis } = useLiveData<KPIData[]>("/kpis", []);
   const { data: commercial } = useLiveData<CommercialData>("/commercial", { profiles: [], pointsProgression: [] });
+  const { data: standingsData } = useLiveData<{ drivers: any[], constructors: any[] }>("/standings", { drivers: [], constructors: [] });
   const { data: liveAlerts } = useLiveData("/alerts", fallbackAlerts);
   const aiInsights = Array.isArray(liveAlerts) && liveAlerts.length > 0 ? liveAlerts : fallbackAlerts;
 
@@ -183,46 +184,60 @@ export default function CommandCenter() {
         </motion.div>
       </div>
 
-      {/* Constructor Commercial Scores — CALCULATED from real data */}
-      <motion.div variants={item} className="chart-container">
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="text-sm font-semibold text-white">Constructor Commercial Intelligence</h3>
-          <SourceBadge source="Jolpica + YouTube + GNews + HuggingFace" dataType="CALCULATED" updatedAt={new Date().toISOString()} compact />
-        </div>
-        <p className="text-[10px] text-zinc-500 mb-3">CCS = (standings_score + youtube_score + news_score + sentiment_score) / 4</p>
-        <div className="space-y-2">
-          {profiles.sort((a, b) => b.commercialScore - a.commercialScore).map((p, idx) => (
-            <div key={p.constructorName} className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.08] transition-all">
-              <span className={cn("position-badge", idx === 0 ? "p1" : idx === 1 ? "p2" : idx === 2 ? "p3" : "bg-white/[0.06] text-zinc-400")}>
-                {idx + 1}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white">{p.constructorName}</p>
-                <p className="text-[10px] text-zinc-500">P{p.standingsPosition} · {p.championshipPoints}pts · {p.newsMentions} news mentions</p>
-              </div>
-              <div className="text-center px-3">
-                <p className="font-data text-sm text-white">{p.youtubeSubscribers > 0 ? formatNumber(p.youtubeSubscribers) : "—"}</p>
-                <p className="text-[9px] text-zinc-500">YT Subs</p>
-              </div>
-              <div className="text-center px-3">
-                <p className={cn("font-data text-sm font-semibold", p.sentimentScore > 60 ? "text-emerald-400" : p.sentimentScore > 40 ? "text-amber-400" : "text-red-400")}>
-                  {p.sentimentScore}
-                </p>
-                <p className="text-[9px] text-zinc-500">Sentiment</p>
-              </div>
-              <div className="w-20">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-data text-xs font-bold text-white">{p.commercialScore}</span>
-                  <span className="text-[9px] text-zinc-500">/100</span>
+      {/* Real Standings Data */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <motion.div variants={item} className="chart-container">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-sm font-semibold text-white">Driver Championship</h3>
+            <SourceBadge source="Jolpica F1 API" dataType="LIVE DATA" compact />
+          </div>
+          <div className="mt-3 space-y-2 max-h-[400px] overflow-y-auto pr-1">
+            {standingsData.drivers.slice(0, 10).map((d: any, idx: number) => (
+              <div key={d.driverId} className="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                <div className="flex items-center gap-3">
+                  <span className={cn("position-badge", idx === 0 ? "p1" : idx === 1 ? "p2" : idx === 2 ? "p3" : "bg-white/[0.06] text-zinc-400")}>
+                    {idx + 1}
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-white">{d.givenName} {d.familyName}</p>
+                    <p className="text-[10px] text-zinc-500">{d.constructorName}</p>
+                  </div>
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                  <div className="h-full rounded-full bg-gradient-to-r from-[#0ea5e9] to-[#a855f7]" style={{ width: `${p.commercialScore}%` }} />
+                <div className="text-right">
+                  <p className="font-data text-sm font-bold text-white">{d.points}</p>
+                  <p className="text-[9px] text-zinc-500">pts</p>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        <motion.div variants={item} className="chart-container">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-sm font-semibold text-white">Constructor Championship</h3>
+            <SourceBadge source="Jolpica F1 API" dataType="LIVE DATA" compact />
+          </div>
+          <div className="mt-3 space-y-2 max-h-[400px] overflow-y-auto pr-1">
+            {standingsData.constructors.map((c: any, idx: number) => (
+              <div key={c.constructorId} className="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                <div className="flex items-center gap-3">
+                  <span className={cn("position-badge", idx === 0 ? "p1" : idx === 1 ? "p2" : idx === 2 ? "p3" : "bg-white/[0.06] text-zinc-400")}>
+                    {idx + 1}
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-white">{c.name}</p>
+                    <p className="text-[10px] text-zinc-500">{c.wins} wins</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-data text-sm font-bold text-white">{c.points}</p>
+                  <p className="text-[9px] text-zinc-500">pts</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
     </motion.div>
   );
 }
