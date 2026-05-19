@@ -27,12 +27,12 @@ const item = {
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const } }
 };
 
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number }[]; label?: string }) {
   if (!active || !payload) return null;
   return (
     <div className="glass-panel p-3 text-xs min-w-[160px]">
       <p className="text-zinc-400 mb-2 font-medium">{label}</p>
-      {payload.map((p: any, i: number) => (
+      {payload.map((p, i: number) => (
         <div key={i} className="flex justify-between gap-4 py-0.5">
           <span className="text-zinc-400">{p.name}</span>
           <span className="font-data text-white">${p.value}M</span>

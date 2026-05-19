@@ -92,7 +92,7 @@ export default function FanModule() {
               return (
                 <div className="glass-panel p-3 text-xs">
                   <p className="text-zinc-400 mb-1">{label}</p>
-                  {payload.map((p: any) => (
+                  {payload.map((p: { name: string; value: number; color: string; dataKey: string }) => (
                     <div key={p.dataKey} className="flex justify-between gap-4">
                       <span style={{ color: p.color }}>{p.name}</span>
                       <span className="font-data text-white">{p.value.toFixed(1)}%</span>
@@ -123,7 +123,7 @@ export default function FanModule() {
                 return (
                   <div className="glass-panel p-3 text-xs">
                     <p className="text-zinc-400 mb-1">{label}</p>
-                    {payload.map((p: any) => (
+                    {payload.map((p: { name: string; value: number; dataKey: string }) => (
                       <div key={p.dataKey} className="flex justify-between gap-4">
                         <span className="text-zinc-400">{p.name}</span>
                         <span className="font-data text-white">{p.value}%</span>

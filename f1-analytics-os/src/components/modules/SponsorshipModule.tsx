@@ -260,7 +260,7 @@ export default function SponsorshipModule() {
               return (
                 <div className="glass-panel p-3 text-xs">
                   <p className="text-zinc-400 mb-1">{label}</p>
-                  {payload.map((p: any) => p.value && (
+                  {payload.map((p: { name: string; value: number; dataKey: string }) => p.value && (
                     <p key={p.dataKey} className="text-zinc-300">{p.name}: <span className="text-white font-data">${p.value?.toFixed(1)}M</span></p>
                   ))}
                 </div>

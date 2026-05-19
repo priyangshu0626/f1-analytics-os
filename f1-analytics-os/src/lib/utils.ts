@@ -51,6 +51,7 @@ export function generateSparkline(length: number = 12, trend: "up" | "down" | "f
   return data;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function downloadCSV(data: any[], filename: string) {
   if (!data || data.length === 0) return;
   const headers = Object.keys(data[0]);
