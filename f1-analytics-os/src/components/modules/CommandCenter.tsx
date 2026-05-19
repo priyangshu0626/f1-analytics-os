@@ -1,7 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
-import { kpiMetrics as fallbackKpis, revenueTimeline, aiInsights, raceEvents, teamSocialData as fallbackFans } from "@/lib/data";
-import { useApiData } from "@/lib/api";
+import { kpiMetrics as fallbackKpis, revenueTimeline, aiInsights as fallbackAlerts, raceEvents, teamSocialData as fallbackFans } from "@/lib/data";
+import { useApiData, useLiveData } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { formatNumber, formatCurrency, cn } from "@/lib/utils";
 import {
@@ -64,6 +64,10 @@ export default function CommandCenter() {
   const { selectedTeam } = useAppStore();
   const rawKpiMetrics = useApiData("/kpis", fallbackKpis);
   const rawTeamSocialData = useApiData("/fans", fallbackFans);
+
+  // Live AI-generated strategic alerts
+  const { data: liveAlerts } = useLiveData("/alerts", fallbackAlerts);
+  const aiInsights = Array.isArray(liveAlerts) && liveAlerts.length > 0 ? liveAlerts : fallbackAlerts;
 
   // Filter or scale based on team
   const kpiMultiplier = selectedTeam === "All Teams" ? 1 : ((selectedTeam.length % 5) + 2) / 10;

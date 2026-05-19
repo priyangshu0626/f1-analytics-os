@@ -32,8 +32,8 @@ export function useApiData<T>(endpoint: string, fallbackData: T): T {
     // Initial fetch
     fetchData();
     
-    // Poll every 10 seconds to simulate real-time live data
-    const intervalId = setInterval(fetchData, 10000);
+    // Poll every 60 seconds (daily data, no need for aggressive polling)
+    const intervalId = setInterval(fetchData, 60_000);
     
     return () => { 
       mounted = false; 
@@ -42,4 +42,39 @@ export function useApiData<T>(endpoint: string, fallbackData: T): T {
   }, [endpoint]);
   
   return data;
+}
+
+/**
+ * Hook for one-time data fetch (no polling). 
+ * Used for data like news/alerts that refresh daily via cron.
+ */
+export function useLiveData<T>(endpoint: string, fallbackData: T): { data: T; loading: boolean; error: boolean } {
+  const [data, setData] = useState<T>(fallbackData);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const result = await fetchFromAPI(endpoint);
+        if (mounted && result) {
+          setData(result);
+          setError(false);
+        }
+      } catch {
+        if (mounted) setError(true);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    fetchData();
+
+    return () => { mounted = false; };
+  }, [endpoint]);
+
+  return { data, loading, error };
 }

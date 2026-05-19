@@ -1,5 +1,6 @@
 "use client";
 import { useAppStore } from "@/lib/store";
+import { useLiveData } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/layout/Sidebar";
@@ -13,6 +14,13 @@ const FanModule = dynamic(() => import("@/components/modules/FanModule"), { load
 const MerchModule = dynamic(() => import("@/components/modules/MerchModule"), { loading: () => <ModuleLoader /> });
 const SimulatorModule = dynamic(() => import("@/components/modules/SimulatorModule"), { loading: () => <ModuleLoader /> });
 const CopilotModule = dynamic(() => import("@/components/modules/CopilotModule"), { loading: () => <ModuleLoader /> });
+
+// Static fallback ticker headlines (replaced by live data when available)
+const FALLBACK_TICKER = [
+  "🏎️ LIVE DATA LOADING — Connecting to F1 Analytics Pipeline",
+  "📊 Fetching real-time 2026 championship standings...",
+  "📰 Loading latest F1 news headlines...",
+];
 
 function ModuleLoader() {
   return (
@@ -39,9 +47,21 @@ const modules: Record<string, React.ComponentType> = {
   copilot: CopilotModule,
 };
 
+interface NewsItem {
+  title: string;
+}
+
 export default function HomePage() {
   const { activeModule, sidebarOpen } = useAppStore();
   const ActiveModule = modules[activeModule] || CommandCenter;
+
+  // Fetch live news for ticker
+  const { data: newsItems } = useLiveData<NewsItem[]>("/news", []);
+  const tickerItems = newsItems.length > 0
+    ? newsItems.map((n) => `📰 ${n.title}`)
+    : FALLBACK_TICKER;
+  // Duplicate for seamless scroll
+  const tickerDisplay = [...tickerItems, ...tickerItems];
 
   return (
     <div className="h-screen flex overflow-hidden bg-[#09090b]">
@@ -60,25 +80,12 @@ export default function HomePage() {
       >
         <Topbar />
 
-        {/* Live Race Ticker */}
+        {/* Live Race Ticker — now powered by real news API */}
         <div className="h-8 border-b border-white/[0.04] bg-[#0c0c0f] flex items-center overflow-hidden relative">
           <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#0c0c0f] to-transparent z-10" />
           <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#0c0c0f] to-transparent z-10" />
           <div className="ticker-scroll whitespace-nowrap">
-            {[
-              "🏎️ NEXT: Monaco GP — May 25, 2026",
-              "📊 McLaren surpasses 50M TikTok followers",
-              "💰 Oracle extends Red Bull deal: $75M/yr",
-              "🚨 Crypto.com ROI alert: -23% QoQ",
-              "📈 Ferrari merch sales +24.5% YTD",
-              "🌍 India fan base grows 42.1% — fastest market",
-              "🤖 AI detected anomaly: Williams engagement spike",
-              "🏆 Season standings updated — VER leads P1",
-              "🏎️ NEXT: Monaco GP — May 25, 2026",
-              "📊 McLaren surpasses 50M TikTok followers",
-              "💰 Oracle extends Red Bull deal: $75M/yr",
-              "🚨 Crypto.com ROI alert: -23% QoQ",
-            ].map((item, i) => (
+            {tickerDisplay.map((item, i) => (
               <span key={i} className="inline-block px-8 text-[11px] text-zinc-500 font-medium">
                 {item}
               </span>
