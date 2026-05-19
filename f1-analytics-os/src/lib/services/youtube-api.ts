@@ -9,15 +9,17 @@ const YT_BASE = "https://www.googleapis.com/youtube/v3";
 
 // F1 team YouTube channel IDs (verified)
 const F1_CHANNELS: Record<string, string> = {
-  formula1: "UCB_qr75-ydFVKSYg0MUxl-A",
-  mercedes: "UCIEPxmhxzTUaFNWI2p43GYQ",
-  ferrari: "UCELpMiLEhJSMR-RaSJHIOyA",
-  red_bull: "UCea3USf0bMR9tLtFSrbuSOA",
-  mclaren: "UCmFnsr6rKLYqjf9GHipcFcQ",
-  alpine: "UCwMQb6bU9XI-z_vJCaBXYSg",
-  aston_martin: "UCH1MCMj7oy7Y9A-6oFOe3Cg",
-  williams: "UC5dRuzQ-fM7yRjXFVOLcf_g",
-  haas: "UCWFH_cOqUIpO3v3h1PUnrXQ",
+  formula1: "UCB_qr75-ydFVKSF9Dmo6izg",
+  mercedes: "UC7_VGkwCoKfqh1eZEkzey3A",
+  ferrari: "UCd8iY-kEHtaB8qt8MH--zGw",
+  red_bull: "UC0mJA1lqKjB4Qaaa2PNf0zg",
+  mclaren: "UC8dxVgZl9u5HeCOXnosCtuQ",
+  alpine: "UCzH4Iwlm8kI09wXbgHvFfIg",
+  aston_martin: "UC8pLH6_Dz4QwKYE-dtcaxeg",
+  williams: "UC4AnEj7Pj9ODVhwojHPqAMA",
+  haas: "UCaGImPpcZdJ_8Iu20lCbHHw",
+  sauber: "UCl1yq_ZQvqEb_D93OVuIFGw",
+  rb: "UCU56G7ZKkB7xkua6EhMz5dg",
 };
 
 export interface YouTubeChannelStats {
